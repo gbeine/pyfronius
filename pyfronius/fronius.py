@@ -100,6 +100,7 @@ class Fronius:
 
 
     def _fetch_json(self, url):
+        _LOGGER.info("Fetch data from {}".format(url))
         request = urllib.request.urlopen(url)
         return json.loads(request.read().decode())
 
@@ -135,35 +136,21 @@ class Fronius:
         site = data['Site']
         inverter = data['Inverters']['1'] # TODO: implement more inverters
   
-        if "Battery_Mode" in inverter:
-            sensor['battery_mode'] = { 'value': inverter['Battery_Mode'] }
-        if "SOC" in inverter:
-            sensor['state_of_charge'] = { 'value': inverter['SOC'], 'unit' :"%" }
+        self._copy(inverter, sensor, "Battery_Mode", 'battery_mode')
+        self._copy(inverter, sensor, "SOC", 'state_of_charge', '%')
 
-        if "BatteryStandby" in site:
-            sensor['battery_standby'] = { 'value' : site['BatteryStandby'] }
-        if "E_Day" in site:
-            sensor['energy_day'] = { 'value': site['E_Day'], 'unit': "Wh" }
-        if "E_Total" in site:
-            sensor['energy_total'] = { 'value': site['E_Total'], 'unit': "Wh" }
-        if "E_Year" in site:
-            sensor['energy_year'] = { 'value': site['E_Year'], 'unit': "Wh" }
-        if "Meter_Location" in site:
-            sensor['meter_location'] = { 'value': site['Meter_Location'] }
-        if "Mode" in site:
-            sensor['meter_mode'] = { 'value': site['Mode'] }
-        if "P_Akku" in site:
-            sensor['power_battery'] = { 'value': site['P_Akku'], 'unit': "W" }
-        if "P_Grid" in site:
-            sensor['power_grid'] = { 'value': site['P_Grid'], 'unit': "W" }
-        if "P_Load" in site:
-            sensor['power_load'] = { 'value': site['P_Load'], 'unit': "W" }
-        if "P_PV" in site:
-            sensor['power_photovoltaics'] = { 'value': site['P_PV'], 'unit': "W" }
-        if "rel_Autonomy" in site:
-            sensor['relative_autonomy'] = { 'value': site['rel_Autonomy'], 'unit': "%" }
-        if "rel_SelfConsumption" in site:
-            sensor['relative_self_consumption'] = { 'value': site['rel_SelfConsumption'], 'unit': "%" }
+        self._copy(site, sensor, "BatteryStandby", 'battery_standby')
+        self._copy(site, sensor, "E_Day", 'energy_day', 'Wh')
+        self._copy(site, sensor, "E_Total", 'energy_total', 'Wh')
+        self._copy(site, sensor, "E_Year", 'energy_year', 'Wh')
+        self._copy(site, sensor, "Meter_Location", 'meter_location')
+        self._copy(site, sensor, "Mode", 'meter_mode')
+        self._copy(site, sensor, "P_Akku", 'power_battery', 'W')
+        self._copy(site, sensor, "P_Grid", 'power_grid', 'W')
+        self._copy(site, sensor, "P_Load", 'power_load', 'W')
+        self._copy(site, sensor, "P_PV", 'power_photovoltaics', 'W')
+        self._copy(site, sensor, "rel_Autonomy", 'relative_autonomy', '%')
+        self._copy(site, sensor, "rel_SelfConsumption", 'relative_self_consumption', '%')
 
         return sensor
 
@@ -239,24 +226,15 @@ class Fronius:
     def _device_inverter_data(self, sensor, data):
         _LOGGER.debug("Converting inverter data from '{}'".format(data))
 
-        if "DAY_ENERGY" in data:
-            sensor['energy_day'] = { 'value': data['DAY_ENERGY']['Value'], 'unit': data['DAY_ENERGY']['Unit'] }
-        if "TOTAL_ENERGY" in data:
-            sensor['energy_total'] = { 'value': data['TOTAL_ENERGY']['Value'], 'unit': data['TOTAL_ENERGY']['Unit'] }
-        if "YEAR_ENERGY" in data:
-            sensor['energy_year'] = { 'value': data['YEAR_ENERGY']['Value'], 'unit': data['YEAR_ENERGY']['Unit'] }
-        if "FAC" in data:
-            sensor['frequency_ac'] = { 'value': data['FAC']['Value'], 'unit': data['FAC']['Unit'] }
-        if "IAC" in data:
-            sensor['current_ac'] = { 'value': data['IAC']['Value'], 'unit': data['IAC']['Unit'] }
-        if "IDC" in data:
-            sensor['current_dc'] = { 'value': data['IDC']['Value'], 'unit': data['IDC']['Unit'] }
-        if "PAC" in data:
-            sensor['power_ac'] = { 'value': data['PAC']['Value'], 'unit': data['PAC']['Unit'] }
-        if "UAC" in data:
-            sensor['voltage_ac'] = { 'value': data['UAC']['Value'], 'unit': data['UAC']['Unit'] }
-        if "UDC" in data:
-            sensor['voltage_dc'] = { 'value': data['UDC']['Value'], 'unit': data['UDC']['Unit'] }
+        self._copy(data, sensor, "DAY_ENERGY", 'energy_day')
+        self._copy(data, sensor, "TOTAL_ENERGY", 'energy_total')
+        self._copy(data, sensor, "YEAR_ENERGY", 'energy_year')
+        self._copy(data, sensor, "FAC", 'frequency_ac')
+        self._copy(data, sensor, "IAC", 'current_ac')
+        self._copy(data, sensor, "IDC", 'current_dc')
+        self._copy(data, sensor, "PAC", 'power_ac')
+        self._copy(data, sensor, "UAC", 'voltage_ac')
+        self._copy(data, sensor, "UDC", 'voltage_dc')
 
         return sensor
 
@@ -265,80 +243,46 @@ class Fronius:
 
         meter = {}
 
-        if "Current_AC_Phase_1" in data:
-            meter['current_ac_phase_1'] = { 'value': data['Current_AC_Phase_1'], 'unit': "A" }
-        if "Current_AC_Phase_2" in data:
-            meter['current_ac_phase_2'] = { 'value': data['Current_AC_Phase_2'], 'unit': "A" }
-        if "Current_AC_Phase_3" in data:
-            meter['current_ac_phase_3'] = { 'value': data['Current_AC_Phase_3'], 'unit': "A" }
-        if "EnergyReactive_VArAC_Sum_Consumed" in data:
-            meter['energy_reactive_ac_consumed'] = { 'value': data['EnergyReactive_VArAC_Sum_Consumed'], 'unit': "Wh" }
-        if "EnergyReactive_VArAC_Sum_Produced" in data:
-            meter['energy_reactive_ac_produced'] = { 'value': data['EnergyReactive_VArAC_Sum_Produced'], 'unit': "Wh" }
-        if "EnergyReal_WAC_Minus_Absolute" in data:
-            meter['energy_real_ac_minus'] = { 'value': data['EnergyReal_WAC_Minus_Absolute'], 'unit': "Wh" }
-        if "EnergyReal_WAC_Plus_Absolute" in data:
-            meter['energy_real_ac_plus'] = { 'value': data['EnergyReal_WAC_Plus_Absolute'], 'unit': "Wh" }
-        if "EnergyReal_WAC_Sum_Consumed" in data:
-            meter['energy_real_consumed'] = { 'value': data['EnergyReal_WAC_Sum_Consumed'], 'unit': "Wh" }
-        if "EnergyReal_WAC_Sum_Produced" in data:
-            meter['energy_real_produced'] = { 'value': data['EnergyReal_WAC_Sum_Produced'], 'unit': "Wh" }
-        if "Frequency_Phase_Average" in data:
-            meter['frequency_phase_average'] = { 'value': data['Frequency_Phase_Average'], 'unit': "Hz" }
-        if "PowerApparent_S_Phase_1" in data:
-            meter['power_apparent_phase_1'] = { 'value': data['PowerApparent_S_Phase_1'], 'unit': "W" }
-        if "PowerApparent_S_Phase_2" in data:
-            meter['power_apparent_phase_2'] = { 'value': data['PowerApparent_S_Phase_2'], 'unit': "W" }
-        if "PowerApparent_S_Phase_3" in data:
-            meter['power_apparent_phase_3'] = { 'value': data['PowerApparent_S_Phase_3'], 'unit': "W" }
-        if "PowerApparent_S_Sum" in data:
-            meter['power_apparent'] = { 'value': data['PowerApparent_S_Sum'], 'unit': "W" }
-        if "PowerFactor_Phase_1" in data:
-            meter['power_factor_phase_1'] = { 'value': data['PowerFactor_Phase_1'], 'unit': "W" }
-        if "PowerFactor_Phase_2" in data:
-            meter['power_factor_phase_2'] = { 'value': data['PowerFactor_Phase_2'], 'unit': "W" }
-        if "PowerFactor_Phase_3" in data:
-            meter['power_factor_phase_3'] = { 'value': data['PowerFactor_Phase_3'], 'unit': "W" }
-        if "PowerFactor_Sum" in data:
-            meter['power_factor'] = { 'value': data['PowerFactor_Sum'], 'unit': "W" }
-        if "PowerReactive_Q_Phase_1" in data:
-            meter['power_reactive_phase_1'] = { 'value': data['PowerReactive_Q_Phase_1'], 'unit': "W" }
-        if "PowerReactive_Q_Phase_2" in data:
-            meter['power_reactive_phase_2'] = { 'value': data['PowerReactive_Q_Phase_2'], 'unit': "W" }
-        if "PowerReactive_Q_Phase_3" in data:
-            meter['power_reactive_phase_3'] = { 'value': data['PowerReactive_Q_Phase_3'], 'unit': "W" }
-        if "PowerReactive_Q_Sum" in data:
-            meter['power_reactive'] = { 'value': data['PowerReactive_Q_Sum'], 'unit': "W" }
-        if "PowerReal_P_Phase_1" in data:
-            meter['power_real_phase_1'] = { 'value': data['PowerReal_P_Phase_1'], 'unit': "W" }
-        if "PowerReal_P_Phase_2" in data:
-            meter['power_real_phase_2'] = { 'value': data['PowerReal_P_Phase_2'], 'unit': "W" }
-        if "PowerReal_P_Phase_3" in data:
-            meter['power_real_phase_3'] = { 'value': data['PowerReal_P_Phase_3'], 'unit': "W" }
-        if "PowerReal_P_Sum" in data:
-            meter['power_real'] = { 'value': data['PowerReal_P_Sum'], 'unit': "W" }
-        if "Voltage_AC_Phase_1" in data:
-            meter['voltage_ac_phase_1'] = { 'value': data['Voltage_AC_Phase_1'], 'unit': "V" }
-        if "Voltage_AC_Phase_2" in data:
-            meter['voltage_ac_phase_2'] = { 'value': data['Voltage_AC_Phase_2'], 'unit': "V" }
-        if "Voltage_AC_Phase_3" in data:
-            meter['voltage_ac_phase_3'] = { 'value': data['Voltage_AC_Phase_3'], 'unit': "V" }
-        if "Voltage_AC_PhaseToPhase_12" in data:
-            meter['voltage_ac_phase_to_phase_12'] = { 'value': data['Voltage_AC_PhaseToPhase_12'], 'unit': "V" }
-        if "Voltage_AC_PhaseToPhase_23" in data:
-            meter['voltage_ac_phase_to_phase_23'] = { 'value': data['Voltage_AC_PhaseToPhase_23'], 'unit': "V" }
-        if "Voltage_AC_PhaseToPhase_31" in data:
-            meter['voltage_ac_phase_to_phase_31'] = { 'value': data['Voltage_AC_PhaseToPhase_31'], 'unit': "V" }
-        if "Meter_Location_Current" in data:
-            meter['meter_location'] = { 'value': data['Meter_Location_Current'] }
-        if "Enable" in data:
-            meter['enable'] = { 'value': data['Enable'] }
-        if "Visible" in data:
-            meter['visible'] = { 'value': data['Visible'] }
+        self._copy(data, meter, "Current_AC_Phase_1", 'current_ac_phase_1', 'A')
+        self._copy(data, meter, "Current_AC_Phase_2", 'current_ac_phase_2', 'A')
+        self._copy(data, meter, "Current_AC_Phase_3", 'current_ac_phase_3', 'A')
+        self._copy(data, meter, "EnergyReactive_VArAC_Sum_Consumed", 'energy_reactive_ac_consumed', 'Wh')
+        self._copy(data, meter, "EnergyReactive_VArAC_Sum_Produced", 'energy_reactive_ac_produced', 'Wh')
+        self._copy(data, meter, "EnergyReal_WAC_Minus_Absolute", 'energy_real_ac_minus', 'Wh')
+        self._copy(data, meter, "EnergyReal_WAC_Plus_Absolute", 'energy_real_ac_plus', 'Wh')
+        self._copy(data, meter, "EnergyReal_WAC_Sum_Consumed", 'energy_real_consumed', 'Wh')
+        self._copy(data, meter, "EnergyReal_WAC_Sum_Produced", 'energy_real_produced', 'Wh')
+        self._copy(data, meter, "Frequency_Phase_Average", 'frequency_phase_average', 'H')
+        self._copy(data, meter, "PowerApparent_S_Phase_1", 'power_apparent_phase_1', 'W')
+        self._copy(data, meter, "PowerApparent_S_Phase_2", 'power_apparent_phase_2', 'W')
+        self._copy(data, meter, "PowerApparent_S_Phase_3", 'power_apparent_phase_3', 'W')
+        self._copy(data, meter, "PowerApparent_S_Sum", 'power_apparent', 'W')
+        self._copy(data, meter, "PowerFactor_Phase_1", 'power_factor_phase_1', 'W')
+        self._copy(data, meter, "PowerFactor_Phase_2", 'power_factor_phase_2', 'W')
+        self._copy(data, meter, "PowerFactor_Phase_3", 'power_factor_phase_3', 'W')
+        self._copy(data, meter, "PowerFactor_Sum", 'power_factor', 'W')
+        self._copy(data, meter, "PowerReactive_Q_Phase_1", 'power_reactive_phase_1', 'W')
+        self._copy(data, meter, "PowerReactive_Q_Phase_2", 'power_reactive_phase_2', 'W')
+        self._copy(data, meter, "PowerReactive_Q_Phase_3", 'power_reactive_phase_3', 'W')
+        self._copy(data, meter, "PowerReactive_Q_Sum", 'power_reactive', 'W')
+        self._copy(data, meter, "PowerReal_P_Phase_1", 'power_real_phase_1', 'W')
+        self._copy(data, meter, "PowerReal_P_Phase_2", 'power_real_phase_2', 'W')
+        self._copy(data, meter, "PowerReal_P_Phase_3", 'power_real_phase_3', 'W')
+        self._copy(data, meter, "PowerReal_P_Sum", 'power_real', 'W')
+        self._copy(data, meter, "Voltage_AC_Phase_1", 'voltage_ac_phase_1', 'V')
+        self._copy(data, meter, "Voltage_AC_Phase_2", 'voltage_ac_phase_2', 'V')
+        self._copy(data, meter, "Voltage_AC_Phase_3", 'voltage_ac_phase_3', 'V')
+        self._copy(data, meter, "Voltage_AC_PhaseToPhase_12", 'voltage_ac_phase_to_phase_12', 'V')
+        self._copy(data, meter, "Voltage_AC_PhaseToPhase_23", 'voltage_ac_phase_to_phase_23', 'V')
+        self._copy(data, meter, "Voltage_AC_PhaseToPhase_31", 'voltage_ac_phase_to_phase_31', 'V')
+
+        self._copy(data, meter, "Meter_Location_Current", 'meter_location')
+        self._copy(data, meter, "Enable", 'enable')
+        self._copy(data, meter, "Visible", 'visible')
         if "Details" in data:
-            meter['manufacturer'] = { 'value': data['Details']['Manufacturer'] }
-            meter['model'] = { 'value': data['Details']['Model'] }
-            meter['serial'] = { 'value': data['Details']['Serial'] }
+            self._copy(data['Details'], meter, "Manufacturer", 'manufacturer')
+            self._copy(data['Details'], meter, "Model", 'model')
+            self._copy(data['Details'], meter, "Serial", 'serial')
 
         return meter
 
@@ -347,28 +291,19 @@ class Fronius:
 
         controller = {}
 
-        if "Capacity_Maximum" in data:
-            controller['capacity_maximum'] = { 'value': data['Capacity_Maximum'], 'unit': "Ah" }
-        if "DesignedCapacity" in data:
-            controller['capacity_designed'] = { 'value': data['DesignedCapacity'], 'unit': "Ah" }
-        if "Current_DC" in data:
-            controller['current_dc'] = { 'value': data['Current_DC'], 'unit': "A" }
-        if "Voltage_DC" in data:
-            controller['voltage_dc'] = { 'value': data['Voltage_DC'], 'unit': "V" }
-        if "Voltage_DC_Maximum_Cell" in data:
-            controller['voltage_dc_maximum_cell'] = { 'value': data['Voltage_DC_Maximum_Cell'], 'unit': "V" }
-        if "Voltage_DC_Minimum_Cell" in data:
-            controller['voltage_dc_minimum_cell'] = { 'value': data['Voltage_DC_Minimum_Cell'], 'unit': "V" }
-        if "StateOfCharge_Relative" in data:
-            controller['state_of_charge'] = { 'value': data['StateOfCharge_Relative'], 'unit': "%" }
-        if "Temperature_Cell" in data:
-            controller['temperature_cell'] = { 'value': data['Temperature_Cell'], 'unit': "C" }
-        if "Enable" in data:
-            controller['enable'] = { 'value': data['Enable'] }
+        self._copy(data, controller, "Capacity_Maximum", 'capacity_maximum', 'Ah')
+        self._copy(data, controller, "DesignedCapacity", 'capacity_designed', 'Ah')
+        self._copy(data, controller, "Current_DC", 'current_dc', 'A')
+        self._copy(data, controller, "Voltage_DC", 'voltage_dc', 'V')
+        self._copy(data, controller, "Voltage_DC_Maximum_Cell", 'voltage_dc_maximum_cell', 'V')
+        self._copy(data, controller, "Voltage_DC_Minimum_Cell", 'voltage_dc_minimum_cell', 'V')
+        self._copy(data, controller, "StateOfCharge_Relative", 'state_of_charge', '%')
+        self._copy(data, controller, "Temperature_Cell", 'temperature_cell', 'C')
+        self._copy(data, controller, "Enable", 'enable')
         if "Details" in data:
-            controller['manufacturer'] = { 'value': data['Details']['Manufacturer'] }
-            controller['model'] = { 'value': data['Details']['Model'] }
-            controller['serial'] = { 'value': data['Details']['Serial'] }
+            self._copy(data['Details'], controller, "Manufacturer", 'manufacturer')
+            self._copy(data['Details'], controller, "Model", 'model')
+            self._copy(data['Details'], controller, "Serial", 'serial')
 
         return controller
 
@@ -377,35 +312,40 @@ class Fronius:
 
         module = { }
 
-        if "Capacity_Maximum" in data:
-            module['capacity_maximum'] = { 'value': data['Capacity_Maximum'], 'unit': "Ah" }
-        if "DesignedCapacity" in data:
-            module['capacity_designed'] = { 'value': data['DesignedCapacity'], 'unit': "Ah" }
-        if "Current_DC" in data:
-            module['current_dc'] = { 'value': data['Current_DC'], 'unit': "A" }
-        if "Voltage_DC" in data:
-            module['voltage_dc'] = { 'value': data['Voltage_DC'], 'unit': "V" }
-        if "Voltage_DC_Maximum_Cell" in data:
-            module['voltage_dc_maximum_cell'] = { 'value': data['Voltage_DC_Maximum_Cell'], 'unit': "V" }
-        if "Voltage_DC_Minimum_Cell" in data:
-            module['voltage_dc_minimum_cell'] = { 'value': data['Voltage_DC_Minimum_Cell'], 'unit': "V" }
-        if "StateOfCharge_Relative" in data:
-            module['state_of_charge'] = { 'value': data['StateOfCharge_Relative'], 'unit': "%" }
-        if "Temperature_Cell" in data:
-            module['temperature_cell'] = { 'value': data['Temperature_Cell'], 'unit': "C" }
-        if "Temperature_Cell_Maximum" in data:
-            module['temperature_cell_maximum'] = { 'value': data['Temperature_Cell_Maximum'], 'unit': "C" }
-        if "Temperature_Cell_Minimum" in data:
-            module['temperature_cell_minimum'] = { 'value': data['Temperature_Cell_Minimum'], 'unit': "C" }
-        if "CycleCount_BatteryCell" in data:
-            module['cycle_count_cell'] = { 'value': data['CycleCount_BatteryCell'] }
-        if "Status_BatteryCell" in data:
-            module['status_cell'] = { 'value': data['Status_BatteryCell'] }
-        if "Enable" in data:
-            module['enable'] = { 'value': data['Enable'] }
+
+        self._copy(data, module, "Capacity_Maximum", 'capacity_maximum', 'Ah')
+        self._copy(data, module, "DesignedCapacity", 'capacity_designed', 'Ah')
+        self._copy(data, module, "Current_DC", 'current_dc', 'A')
+        self._copy(data, module, "Voltage_DC", 'voltage_dc', 'V')
+        self._copy(data, module, "Voltage_DC_Maximum_Cell", 'voltage_dc_maximum_cell', 'V')
+        self._copy(data, module, "Voltage_DC_Minimum_Cell", 'voltage_dc_minimum_cell', 'V')
+        self._copy(data, module, "StateOfCharge_Relative", 'state_of_charge', '%')
+        self._copy(data, module, "Temperature_Cell", 'temperature_cell', 'C')
+        self._copy(data, module, "Temperature_Cell_Maximum", 'temperature_cell_maximum', 'C')
+        self._copy(data, module, "Temperature_Cell_Minimum", 'temperature_cell_minimum', 'C')
+        self._copy(data, module, "CycleCount_BatteryCell", 'cycle_count_cell', 'C')
+        self._copy(data, module, "Status_BatteryCell", 'status_cell')
+
+        self._copy(data, module, "Enable", 'enable')
         if "Details" in data:
-            module['manufacturer'] = { 'value': data['Details']['Manufacturer'] }
-            module['model'] = { 'value': data['Details']['Model'] }
-            module['serial'] = { 'value': data['Details']['Serial'] }
+            self._copy(data['Details'], module, "Manufacturer", 'manufacturer')
+            self._copy(data['Details'], module, "Model", 'model')
+            self._copy(data['Details'], module, "Serial", 'serial')
 
         return module
+
+    def _copy(self, source, target, sid, tid, unit = None):
+    	
+        if sid in source and isinstance(source[sid], dict) and 'Value' in source[sid]:
+            target[tid] = { 'value': source[sid]['Value'] }
+            if "Unit" in source[sid]:
+                target[tid]['unit'] = source[sid]['Unit'] 
+        elif sid in source:
+            target[tid] = { 'value': source[sid] }
+        else:
+            target[tid] = { 'value': 0 }
+
+        if unit is not None:
+            target[tid]['unit'] = unit 
+
+        return

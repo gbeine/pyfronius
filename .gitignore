@@ -24,6 +24,7 @@ wheels/
 .installed.cfg
 *.egg
 MANIFEST
+PyFronius.egg-info
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -108,3 +109,6 @@ venv.bak/
 .pydevproject
 .settings/
 
+# BBEdit project
+pyfronius.bbprojectd
+fronius2mqtt/fronius2mqtt.egg-info
