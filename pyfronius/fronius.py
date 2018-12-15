@@ -346,6 +346,9 @@ class Fronius:
             target[tid] = { 'value': 0 }
 
         if unit is not None:
-            target[tid]['unit'] = unit 
+            target[tid]['unit'] = unit
+
+        if target[tid]['value'] == 'null':
+            target[tid]['value'] = 0
 
         return
